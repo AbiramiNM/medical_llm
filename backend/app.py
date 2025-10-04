@@ -394,16 +394,16 @@ def extract_patient_info_for_pdf(text):
             if len(parts) > 1:
                 patient_info[key] = parts[-1].strip()
     
-    # Format for PDF
+    # Format for PDF with simple format
     formatted_info = []
-    formatted_info.append(f"Patient Name: {patient_info['name']}")
+    formatted_info.append(f"Name: {patient_info['name']}")
     formatted_info.append(f"MR Number: {patient_info['mr_number']}")
     formatted_info.append(f"Date of Operation: {patient_info['date_of_operation']}")
-    formatted_info.append(f"Age: {patient_info['age']}")
     formatted_info.append(f"Gender: {patient_info['gender']}")
-    formatted_info.append(f"Account No: {patient_info['account_no']}")
+    formatted_info.append(f"Age: {patient_info['age']}")
     formatted_info.append(f"Height: {patient_info['height']}")
     formatted_info.append(f"Weight: {patient_info['weight']}")
+    formatted_info.append(f"Account No: {patient_info['account_no']}")
     
     return '\n'.join(formatted_info)
 

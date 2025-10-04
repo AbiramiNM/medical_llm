@@ -265,38 +265,38 @@ def extract_patient_info(text: str) -> str:
                 patient_info[key] = parts[-1].strip()
     
     return f"""
-    <div class="patient-info-grid">
-        <div class="info-item">
-            <strong>👤 Patient Name</strong>
-            <span>{patient_info['name']}</span>
+    <div class="patient-info-simple">
+        <div class="info-line">
+            <span class="label">Name:</span>
+            <span class="value">{patient_info['name']}</span>
         </div>
-        <div class="info-item">
-            <strong>🆔 MR Number</strong>
-            <span>{patient_info['mr_number']}</span>
+        <div class="info-line">
+            <span class="label">MR Number:</span>
+            <span class="value">{patient_info['mr_number']}</span>
         </div>
-        <div class="info-item">
-            <strong>📅 Date of Operation</strong>
-            <span>{patient_info['date_of_operation']}</span>
+        <div class="info-line">
+            <span class="label">Date of Operation:</span>
+            <span class="value">{patient_info['date_of_operation']}</span>
         </div>
-        <div class="info-item">
-            <strong>👥 Gender</strong>
-            <span>{patient_info['gender']}</span>
+        <div class="info-line">
+            <span class="label">Gender:</span>
+            <span class="value">{patient_info['gender']}</span>
         </div>
-        <div class="info-item">
-            <strong>🎂 Age</strong>
-            <span>{patient_info['age']}</span>
+        <div class="info-line">
+            <span class="label">Age:</span>
+            <span class="value">{patient_info['age']}</span>
         </div>
-        <div class="info-item">
-            <strong>📊 Height</strong>
-            <span>{patient_info['height']}</span>
+        <div class="info-line">
+            <span class="label">Height:</span>
+            <span class="value">{patient_info['height']}</span>
         </div>
-        <div class="info-item">
-            <strong>⚖️ Weight</strong>
-            <span>{patient_info['weight']}</span>
+        <div class="info-line">
+            <span class="label">Weight:</span>
+            <span class="value">{patient_info['weight']}</span>
         </div>
-        <div class="info-item">
-            <strong>🏥 Account No</strong>
-            <span>{patient_info['account_no']}</span>
+        <div class="info-line">
+            <span class="label">Account No:</span>
+            <span class="value">{patient_info['account_no']}</span>
         </div>
     </div>
     """
