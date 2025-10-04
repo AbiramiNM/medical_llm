@@ -25,18 +25,103 @@ def generate_pdf(extracted_text, analysis, filename):
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
-    pdf.cell(0, 10, "Medical Report Summary", ln=True, align='C')
+    # Header
+    pdf.cell(0, 10, "VitaNote - Medical Report Analysis", ln=True, align='C')
     pdf.ln(10)
 
-    pdf.multi_cell(0, 10, "Extracted Text:\n" + clean_text(extracted_text))
-    pdf.ln(5)
-    pdf.multi_cell(0, 10, "LLM Analysis:\n" + clean_text(analysis))
+    # Check if this is real OCR text or metadata
+    if "MEDICAL DOCUMENT ANALYSIS" not in extracted_text and "DOCUMENT PROCESSING STATUS" not in extracted_text:
+        # This is real OCR text - create proper medical report
+        pdf.set_font("Arial", size=14, style='B')
+        pdf.cell(0, 10, "Medical Report Summary", ln=True, align='C')
+        pdf.ln(10)
+        
+        pdf.set_font("Arial", size=12)
+        
+        # Extract and format patient information
+        patient_info = extract_patient_info_for_pdf(extracted_text)
+        if patient_info:
+            pdf.set_font("Arial", size=12, style='B')
+            pdf.cell(0, 8, "Patient Information:", ln=True)
+            pdf.set_font("Arial", size=11)
+            pdf.multi_cell(0, 6, patient_info)
+            pdf.ln(5)
+        
+        # Medical details
+        pdf.set_font("Arial", size=12, style='B')
+        pdf.cell(0, 8, "Medical Details:", ln=True)
+        pdf.set_font("Arial", size=11)
+        pdf.multi_cell(0, 6, clean_text(extracted_text))
+        pdf.ln(5)
+        
+        # Recommendations
+        recommendations = extract_recommendations_for_pdf(extracted_text)
+        if recommendations:
+            pdf.set_font("Arial", size=12, style='B')
+            pdf.cell(0, 8, "Recommendations:", ln=True)
+            pdf.set_font("Arial", size=11)
+            pdf.multi_cell(0, 6, recommendations)
+            pdf.ln(5)
+        
+        # Analysis
+        pdf.set_font("Arial", size=12, style='B')
+        pdf.cell(0, 8, "AI Analysis:", ln=True)
+        pdf.set_font("Arial", size=11)
+        # Remove HTML tags from analysis for PDF
+        clean_analysis = clean_html_tags(analysis)
+        pdf.multi_cell(0, 6, clean_text(clean_analysis))
+        
+    else:
+        # This is metadata fallback
+        pdf.set_font("Arial", size=12, style='B')
+        pdf.cell(0, 8, "Document Processing Report", ln=True)
+        pdf.set_font("Arial", size=11)
+        pdf.multi_cell(0, 6, clean_text(extracted_text))
+        pdf.ln(5)
+        pdf.multi_cell(0, 6, clean_text(analysis))
+
+    # Disclaimer
+    pdf.ln(10)
+    pdf.set_font("Arial", size=10, style='I')
+    pdf.multi_cell(0, 5, "DISCLAIMER: This analysis is generated from the uploaded medical report. Always consult with your healthcare provider for medical advice and interpretation.")
 
     filepath = os.path.join("output", filename)
     os.makedirs("output", exist_ok=True)
     pdf.output(filepath)
 
     return filepath
+
+def extract_patient_info_for_pdf(text):
+    """Extract patient information for PDF formatting"""
+    lines = text.split('\n')
+    info_lines = []
+    
+    for line in lines:
+        line_lower = line.lower()
+        if any(keyword in line_lower for keyword in ['patient', 'name', 'age', 'sex', 'gender', 'dob', 'date of birth']):
+            if line.strip():
+                info_lines.append(line.strip())
+    
+    return '\n'.join(info_lines[:5])  # Limit to first 5 relevant lines
+
+def extract_recommendations_for_pdf(text):
+    """Extract recommendations for PDF formatting"""
+    lines = text.split('\n')
+    recommendations = []
+    
+    for line in lines:
+        line_lower = line.lower()
+        if any(keyword in line_lower for keyword in ['recommend', 'follow-up', 'return', 'schedule', 'continue', 'discontinue', 'advise']):
+            if line.strip():
+                recommendations.append(f"• {line.strip()}")
+    
+    return '\n'.join(recommendations[:10])  # Limit to first 10 recommendations
+
+def clean_html_tags(text):
+    """Remove HTML tags from text for PDF"""
+    import re
+    clean = re.compile('<.*?>')
+    return re.sub(clean, '', text)
 
 
 # ---------------------------------------------

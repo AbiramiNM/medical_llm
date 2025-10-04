@@ -6,6 +6,27 @@ try:
     import pytesseract
     from pdf2image import convert_from_path
     TESSERACT_AVAILABLE = True
+    
+    # Configure Tesseract path for Windows
+    try:
+        # Try common Windows installation paths
+        possible_paths = [
+            r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+            r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+            r"C:\Users\{}\AppData\Local\Tesseract-OCR\tesseract.exe".format(os.getenv('USERNAME', '')),
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                pytesseract.pytesseract.tesseract_cmd = path
+                print(f"Tesseract found at: {path}")
+                break
+        else:
+            print("Tesseract executable not found in common paths")
+            
+    except Exception as e:
+        print(f"Error configuring Tesseract: {e}")
+        
 except ImportError:
     TESSERACT_AVAILABLE = False
     print("Warning: pytesseract or pdf2image not available. OCR will use fallback mode.")
@@ -17,24 +38,32 @@ def extract_text_from_file(filepath):
         if not os.path.exists(filepath):
             raise FileNotFoundError("File does not exist.")
 
-        # If Tesseract is not available, try alternative methods
-        if not TESSERACT_AVAILABLE:
-            return extract_file_metadata_and_content(filepath)
+        # Try OCR first if available
+        if TESSERACT_AVAILABLE:
+            try:
+                if filepath.lower().endswith(".pdf"):
+                    print("Converting PDF pages to images...")
+                    images = convert_from_path(filepath, dpi=300)
+                    text = ''
+                    for idx, img in enumerate(images):
+                        print(f"OCR on page {idx + 1}")
+                        text += pytesseract.image_to_string(img) + "\n"
+                    return text
 
-        if filepath.lower().endswith(".pdf"):
-            print("Converting PDF pages to images...")
-            images = convert_from_path(filepath, dpi=300)
-            text = ''
-            for idx, img in enumerate(images):
-                print(f"OCR on page {idx + 1}")
-                text += pytesseract.image_to_string(img) + "\n"
-            return text
-
+                else:
+                    print("Converting image to text...")
+                    img = Image.open(filepath)
+                    text = pytesseract.image_to_string(img)
+                    print(f"OCR extracted {len(text)} characters")
+                    return text
+                    
+            except Exception as ocr_error:
+                print(f"OCR failed: {ocr_error}")
+                # Fall back to metadata analysis
+                return extract_file_metadata_and_content(filepath)
         else:
-            print("Converting image to text...")
-            img = Image.open(filepath)
-            text = pytesseract.image_to_string(img)
-            return text
+            print("Tesseract not available, using fallback analysis")
+            return extract_file_metadata_and_content(filepath)
 
     except Exception as e:
         print(" Error in OCR:", e)

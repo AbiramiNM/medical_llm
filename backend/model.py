@@ -28,22 +28,141 @@ def model_inference(Content: str) -> str:
 
 def generate_fallback_analysis(text: str) -> str:
     """Generate a comprehensive medical analysis when API is not available"""
-    # Analyze the text to determine report type and extract key information
-    text_lower = text.lower()
+    # Check if this is actual OCR text or fallback metadata
+    if "MEDICAL DOCUMENT ANALYSIS" in text or "DOCUMENT PROCESSING STATUS" in text:
+        # This is fallback metadata, not real OCR text
+        return generate_metadata_analysis(text)
     
-    # Extract key information from the text
+    # This is real OCR text from the document
+    return generate_real_medical_analysis(text)
+
+def generate_real_medical_analysis(text: str) -> str:
+    """Generate analysis from actual OCR-extracted medical text"""
+    # Extract medical information from the text
+    patient_info = extract_patient_info(text)
+    medical_details = extract_medical_details(text)
+    recommendations = extract_recommendations(text)
+    
+    return f"""
+    <h3>🏥 Medical Report Analysis</h3>
+    
+    <div class="analysis-section">
+        <h4>👤 Patient Information</h4>
+        {patient_info}
+    </div>
+    
+    <div class="analysis-section">
+        <h4>📋 Medical Details</h4>
+        {medical_details}
+    </div>
+    
+    <div class="analysis-section">
+        <h4>💡 Recommendations</h4>
+        {recommendations}
+    </div>
+    
+    <div class="important-note">
+        <i class="fas fa-exclamation-circle"></i> 
+        <strong>Disclaimer:</strong> This analysis is generated from the uploaded medical report. Always consult with your healthcare provider for medical advice and interpretation.
+    </div>
+    """
+
+def extract_patient_info(text: str) -> str:
+    """Extract patient information from medical text"""
+    lines = text.split('\n')
+    patient_name = "Not specified"
+    age = "Not specified"
+    gender = "Not specified"
+    
+    for line in lines:
+        line_lower = line.lower()
+        if 'patient' in line_lower and 'name' in line_lower:
+            patient_name = line.strip()
+        elif 'age' in line_lower and any(char.isdigit() for char in line):
+            age = line.strip()
+        elif 'sex' in line_lower or 'gender' in line_lower:
+            gender = line.strip()
+    
+    return f"""
+    <ul>
+        <li><strong>Patient Name:</strong> {patient_name}</li>
+        <li><strong>Age:</strong> {age}</li>
+        <li><strong>Gender:</strong> {gender}</li>
+    </ul>
+    """
+
+def extract_medical_details(text: str) -> str:
+    """Extract medical details from the text"""
+    # Look for common medical sections
+    sections = []
+    current_section = ""
+    
+    lines = text.split('\n')
+    for line in lines:
+        line = line.strip()
+        if line and len(line) > 3:  # Skip very short lines
+            # Look for section headers
+            if any(keyword in line.lower() for keyword in ['diagnosis', 'findings', 'procedure', 'treatment', 'history', 'examination']):
+                if current_section:
+                    sections.append(current_section)
+                current_section = f"<strong>{line}</strong><br>"
+            else:
+                current_section += f"{line}<br>"
+    
+    if current_section:
+        sections.append(current_section)
+    
+    if sections:
+        return "<div>" + "<br><br>".join(sections) + "</div>"
+    else:
+        return "<p>Medical details extracted from the uploaded report. Please review the full document for complete information.</p>"
+
+def extract_recommendations(text: str) -> str:
+    """Extract recommendations from the text"""
+    recommendations = []
+    lines = text.split('\n')
+    
+    for line in lines:
+        line_lower = line.lower()
+        if any(keyword in line_lower for keyword in ['recommend', 'follow-up', 'return', 'schedule', 'continue', 'discontinue']):
+            recommendations.append(f"• {line.strip()}")
+    
+    if recommendations:
+        return "<ul>" + "".join([f"<li>{rec}</li>" for rec in recommendations]) + "</ul>"
+    else:
+        return "<p>Please consult with your healthcare provider for specific recommendations based on this report.</p>"
+
+def generate_metadata_analysis(text: str) -> str:
+    """Generate analysis from metadata when OCR fails"""
     filename = extract_filename_from_text(text)
     file_size = extract_file_size_from_text(text)
     doc_type = extract_document_type_from_text(text)
     
-    if "surgery" in text_lower or "operative" in text_lower:
-        return generate_surgery_analysis(text, filename, file_size, doc_type)
-    elif "lab" in text_lower or "blood" in text_lower or "test" in text_lower:
-        return generate_lab_analysis(text, filename, file_size, doc_type)
-    elif "xray" in text_lower or "ct" in text_lower or "mri" in text_lower or "imaging" in text_lower:
-        return generate_imaging_analysis(text, filename, file_size, doc_type)
-    else:
-        return generate_general_analysis(text, filename, file_size, doc_type)
+    return f"""
+    <h3>📄 Document Processing Report</h3>
+    
+    <div class="analysis-section">
+        <h4>📋 Document Information</h4>
+        <p><strong>File:</strong> {filename}</p>
+        <p><strong>Size:</strong> {file_size}</p>
+        <p><strong>Type:</strong> {doc_type}</p>
+    </div>
+    
+    <div class="analysis-section">
+        <h4>⚠️ Processing Status</h4>
+        <p>This document has been successfully uploaded but OCR text extraction is not available. To get detailed medical analysis:</p>
+        <ol>
+            <li>Ensure the document is clear and readable</li>
+            <li>Try uploading a higher resolution version</li>
+            <li>Consult with your healthcare provider for interpretation</li>
+        </ol>
+    </div>
+    
+    <div class="important-note">
+        <i class="fas fa-exclamation-circle"></i> 
+        <strong>Disclaimer:</strong> This is a document processing report. Always consult with your healthcare provider for medical advice.
+    </div>
+    """
 
 def extract_filename_from_text(text: str) -> str:
     """Extract filename from the text"""
