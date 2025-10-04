@@ -73,49 +73,204 @@ def extract_patient_info(text: str) -> str:
     patient_name = "Not specified"
     age = "Not specified"
     gender = "Not specified"
+    mr_number = "Not specified"
+    date_of_operation = "Not specified"
+    account_no = "Not specified"
+    height = "Not specified"
+    weight = "Not specified"
     
     for line in lines:
         line_lower = line.lower()
-        if 'patient' in line_lower and 'name' in line_lower:
-            patient_name = line.strip()
-        elif 'age' in line_lower and any(char.isdigit() for char in line):
-            age = line.strip()
-        elif 'sex' in line_lower or 'gender' in line_lower:
-            gender = line.strip()
+        if 'patient name:' in line_lower:
+            # Extract name after "Patient name:"
+            parts = line.split(':')
+            if len(parts) > 1:
+                patient_name = parts[1].strip()
+        elif 'mr number:' in line_lower:
+            parts = line.split(':')
+            if len(parts) > 1:
+                mr_number = parts[1].strip()
+        elif 'date of operation:' in line_lower:
+            parts = line.split(':')
+            if len(parts) > 1:
+                date_of_operation = parts[1].strip()
+        elif 'account no:' in line_lower:
+            parts = line.split(':')
+            if len(parts) > 1:
+                account_no = parts[1].strip()
+        elif 'height:' in line_lower:
+            parts = line.split(':')
+            if len(parts) > 1:
+                height = parts[1].strip()
+        elif 'weight:' in line_lower:
+            parts = line.split(':')
+            if len(parts) > 1:
+                weight = parts[1].strip()
+        elif 'female' in line_lower:
+            gender = "Female"
+        elif 'male' in line_lower:
+            gender = "Male"
+        elif 'year-old' in line_lower:
+            # Extract age from "22-year-old"
+            import re
+            age_match = re.search(r'(\d+)-year-old', line_lower)
+            if age_match:
+                age = f"{age_match.group(1)} years old"
     
     return f"""
-    <ul>
-        <li><strong>Patient Name:</strong> {patient_name}</li>
-        <li><strong>Age:</strong> {age}</li>
-        <li><strong>Gender:</strong> {gender}</li>
-    </ul>
+    <div class="patient-info-grid">
+        <div class="info-item">
+            <strong>👤 Patient Name:</strong> {patient_name}
+        </div>
+        <div class="info-item">
+            <strong>🆔 MR Number:</strong> {mr_number}
+        </div>
+        <div class="info-item">
+            <strong>📅 Date of Operation:</strong> {date_of_operation}
+        </div>
+        <div class="info-item">
+            <strong>👥 Gender:</strong> {gender}
+        </div>
+        <div class="info-item">
+            <strong>🎂 Age:</strong> {age}
+        </div>
+        <div class="info-item">
+            <strong>📊 Height:</strong> {height}
+        </div>
+        <div class="info-item">
+            <strong>⚖️ Weight:</strong> {weight}
+        </div>
+        <div class="info-item">
+            <strong>🏥 Account No:</strong> {account_no}
+        </div>
+    </div>
     """
 
 def extract_medical_details(text: str) -> str:
-    """Extract medical details from the text"""
-    # Look for common medical sections
-    sections = []
-    current_section = ""
-    
+    """Extract and highlight key medical details from the text"""
     lines = text.split('\n')
+    
+    # Extract key surgical information
+    surgical_info = {
+        'preoperative_diagnosis': '',
+        'postoperative_diagnosis': '',
+        'operation_performed': '',
+        'surgeon': '',
+        'anesthesia': '',
+        'condition': '',
+        'complications': '',
+        'clinical_findings': '',
+        'procedure_details': ''
+    }
+    
+    current_section = ''
+    procedure_started = False
+    
     for line in lines:
         line = line.strip()
-        if line and len(line) > 3:  # Skip very short lines
-            # Look for section headers
-            if any(keyword in line.lower() for keyword in ['diagnosis', 'findings', 'procedure', 'treatment', 'history', 'examination']):
-                if current_section:
-                    sections.append(current_section)
-                current_section = f"<strong>{line}</strong><br>"
-            else:
-                current_section += f"{line}<br>"
+        if not line:
+            continue
+            
+        line_lower = line.lower()
+        
+        # Extract specific surgical information
+        if 'preoperative diagnosis:' in line_lower:
+            surgical_info['preoperative_diagnosis'] = line.split(':', 1)[1].strip() if ':' in line else ''
+        elif 'post-operative diagnosi:' in line_lower or 'postoperative diagnosis:' in line_lower:
+            surgical_info['postoperative_diagnosis'] = line.split(':', 1)[1].strip() if ':' in line else ''
+        elif 'operation performed:' in line_lower:
+            surgical_info['operation_performed'] = line.split(':', 1)[1].strip() if ':' in line else ''
+        elif 'surgeon' in line_lower and not surgical_info['surgeon']:
+            surgical_info['surgeon'] = line.split(':', 1)[1].strip() if ':' in line else line
+        elif 'anesthesia' in line_lower and not surgical_info['anesthesia']:
+            surgical_info['anesthesia'] = line.split(':', 1)[1].strip() if ':' in line else line
+        elif 'condition' in line_lower and not surgical_info['condition']:
+            surgical_info['condition'] = line.split(':', 1)[1].strip() if ':' in line else line
+        elif 'complications' in line_lower and not surgical_info['complications']:
+            surgical_info['complications'] = line.split(':', 1)[1].strip() if ':' in line else line
+        elif 'clinical finding:' in line_lower:
+            surgical_info['clinical_findings'] = line.split(':', 1)[1].strip() if ':' in line else ''
+        elif 'procedure:' in line_lower:
+            procedure_started = True
+            surgical_info['procedure_details'] = line.split(':', 1)[1].strip() if ':' in line else ''
+        elif procedure_started and line:
+            surgical_info['procedure_details'] += ' ' + line
     
-    if current_section:
-        sections.append(current_section)
+    # Format the surgical information
+    formatted_sections = []
     
-    if sections:
-        return "<div>" + "<br><br>".join(sections) + "</div>"
-    else:
-        return "<p>Medical details extracted from the uploaded report. Please review the full document for complete information.</p>"
+    if surgical_info['preoperative_diagnosis']:
+        formatted_sections.append(f"""
+        <div class="surgical-section">
+            <h4>🔍 Preoperative Diagnosis</h4>
+            <div class="highlight-box">
+                <strong>{surgical_info['preoperative_diagnosis']}</strong>
+            </div>
+        </div>
+        """)
+    
+    if surgical_info['postoperative_diagnosis']:
+        formatted_sections.append(f"""
+        <div class="surgical-section">
+            <h4>✅ Postoperative Diagnosis</h4>
+            <div class="highlight-box success">
+                <strong>{surgical_info['postoperative_diagnosis']}</strong>
+            </div>
+        </div>
+        """)
+    
+    if surgical_info['operation_performed']:
+        formatted_sections.append(f"""
+        <div class="surgical-section">
+            <h4>🏥 Operation Performed</h4>
+            <div class="highlight-box primary">
+                <strong>{surgical_info['operation_performed']}</strong>
+            </div>
+        </div>
+        """)
+    
+    # Surgical team information
+    team_info = []
+    if surgical_info['surgeon']:
+        team_info.append(f"<strong>👨‍⚕️ Surgeon:</strong> {surgical_info['surgeon']}")
+    if surgical_info['anesthesia']:
+        team_info.append(f"<strong>💉 Anesthesia:</strong> {surgical_info['anesthesia']}")
+    if surgical_info['condition']:
+        team_info.append(f"<strong>📊 Condition:</strong> {surgical_info['condition']}")
+    if surgical_info['complications']:
+        team_info.append(f"<strong>⚠️ Complications:</strong> {surgical_info['complications']}")
+    
+    if team_info:
+        formatted_sections.append(f"""
+        <div class="surgical-section">
+            <h4>👥 Surgical Team & Status</h4>
+            <div class="team-info">
+                {'<br>'.join(team_info)}
+            </div>
+        </div>
+        """)
+    
+    if surgical_info['clinical_findings']:
+        formatted_sections.append(f"""
+        <div class="surgical-section">
+            <h4>🔬 Clinical Findings</h4>
+            <div class="clinical-findings">
+                {surgical_info['clinical_findings']}
+            </div>
+        </div>
+        """)
+    
+    if surgical_info['procedure_details']:
+        formatted_sections.append(f"""
+        <div class="surgical-section">
+            <h4>⚕️ Procedure Details</h4>
+            <div class="procedure-details">
+                {surgical_info['procedure_details']}
+            </div>
+        </div>
+        """)
+    
+    return ''.join(formatted_sections) if formatted_sections else "<p>Medical details extracted from the uploaded report. Please review the full document for complete information.</p>"
 
 def extract_recommendations(text: str) -> str:
     """Extract recommendations from the text"""
