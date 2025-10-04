@@ -56,6 +56,9 @@ def ocr_image():
     if file.filename == '':
         return jsonify({'error': 'Empty file'}), 400
 
+    # Ensure uploads directory exists
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    
     filepath = os.path.join(UPLOAD_FOLDER, file.filename)
     file.save(filepath)
     print(f"File successfully saved at: {filepath}")  # debug log
