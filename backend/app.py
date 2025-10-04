@@ -235,11 +235,27 @@ def extract_patient_info_for_pdf(text):
         if 'mr number:' in line_lower or 'mr no:' in line_lower or 'mr:' in line_lower:
             parts = line.split(':', 1)
             if len(parts) > 1:
-                patient_info['mr_number'] = parts[1].strip()
+                mr_value = parts[1].strip()
+                # Clean up MR number - extract just the number part
+                mr_match = re.search(r'\b\d{6,8}\b', mr_value)
+                if mr_match:
+                    patient_info['mr_number'] = mr_match.group()
+                else:
+                    patient_info['mr_number'] = mr_value
         elif 'medical record' in line_lower and ':' in line:
             parts = line.split(':', 1)
             if len(parts) > 1:
-                patient_info['mr_number'] = parts[1].strip()
+                mr_value = parts[1].strip()
+                mr_match = re.search(r'\b\d{6,8}\b', mr_value)
+                if mr_match:
+                    patient_info['mr_number'] = mr_match.group()
+                else:
+                    patient_info['mr_number'] = mr_value
+        elif 'exhibit' in line_lower and 'no' in line_lower:
+            # Handle "Patient Exhibit No.2 1-37-27846" format
+            mr_match = re.search(r'(\d+-\d+-\d+)', line)
+            if mr_match:
+                patient_info['mr_number'] = mr_match.group(1)
         
         # Extract date of operation - multiple patterns
         if any(phrase in line_lower for phrase in ['date of operation:', 'operation date:', 'surgery date:', 'date of surgery:']):
@@ -283,31 +299,92 @@ def extract_patient_info_for_pdf(text):
     
     # Fallback: Look for patterns in the entire text if specific fields weren't found
     if patient_info['name'] == 'Not specified':
-        # Look for name patterns (First Last)
-        name_match = re.search(r'\b[A-Z][a-z]+\s+[A-Z][a-z]+\b', text)
-        if name_match:
-            potential_name = name_match.group()
-            # Check if it's not a medical term
-            if not any(term in potential_name.lower() for term in ['surgery', 'operative', 'report', 'medical', 'hospital', 'doctor', 'nurse']):
-                patient_info['name'] = potential_name
+        # Look for name patterns (First Last) - more specific patterns
+        name_patterns = [
+            r'\b[A-Z][a-z]+\s+[A-Z][a-z]+\b',  # Standard First Last
+            r'Patient name:\s*([A-Z][a-z]+\s+[A-Z][a-z]+)',  # After "Patient name:"
+            r'Name:\s*([A-Z][a-z]+\s+[A-Z][a-z]+)'  # After "Name:"
+        ]
+        for pattern in name_patterns:
+            name_match = re.search(pattern, text)
+            if name_match:
+                potential_name = name_match.group(1) if name_match.groups() else name_match.group()
+                # Check if it's not a medical term
+                if not any(term in potential_name.lower() for term in ['surgery', 'operative', 'report', 'medical', 'hospital', 'doctor', 'nurse', 'exhibit']):
+                    patient_info['name'] = potential_name
+                    break
     
     if patient_info['mr_number'] == 'Not specified':
-        # Look for MR number pattern (6 digits)
-        mr_match = re.search(r'\b\d{6}\b', text)
-        if mr_match:
-            patient_info['mr_number'] = mr_match.group()
+        # Look for MR number patterns - various formats
+        mr_patterns = [
+            r'\b\d{6}\b',  # 6 digits
+            r'\b\d{7}\b',  # 7 digits
+            r'\b\d{8}\b',  # 8 digits
+            r'\d+-\d+-\d+',  # Format like 1-37-27846
+            r'MR\s*[Nn]o\.?\s*(\d+)',  # MR No. 123456
+            r'Medical\s*Record\s*[Nn]o\.?\s*(\d+)'  # Medical Record No. 123456
+        ]
+        for pattern in mr_patterns:
+            mr_match = re.search(pattern, text)
+            if mr_match:
+                patient_info['mr_number'] = mr_match.group(1) if mr_match.groups() else mr_match.group()
+                break
     
     if patient_info['date_of_operation'] == 'Not specified':
-        # Look for date patterns
-        date_match = re.search(r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}/\d{4}', text)
-        if date_match:
-            patient_info['date_of_operation'] = date_match.group()
+        # Look for date patterns - more comprehensive
+        date_patterns = [
+            r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}',  # MM/DD/YYYY or MM-DD-YYYY
+            r'\d{1,2}/\d{4}',  # MM/YYYY
+            r'\d{1,2}-\d{4}',  # MM-YYYY
+            r'\d{4}[/-]\d{1,2}[/-]\d{1,2}',  # YYYY/MM/DD
+            r'Date\s*of\s*operation:\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',  # After "Date of operation:"
+            r'Operation\s*date:\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})'  # After "Operation date:"
+        ]
+        for pattern in date_patterns:
+            date_match = re.search(pattern, text)
+            if date_match:
+                patient_info['date_of_operation'] = date_match.group(1) if date_match.groups() else date_match.group()
+                break
     
     if patient_info['account_no'] == 'Not specified':
-        # Look for account number pattern (7 digits)
-        account_match = re.search(r'\b\d{7}\b', text)
-        if account_match:
-            patient_info['account_no'] = account_match.group()
+        # Look for account number patterns
+        account_patterns = [
+            r'\b\d{7}\b',  # 7 digits
+            r'\b\d{6}\b',  # 6 digits
+            r'\b\d{8}\b',  # 8 digits
+            r'Account\s*[Nn]o\.?\s*(\d+)',  # Account No. 1234567
+            r'Account\s*number:\s*(\d+)'  # Account number: 1234567
+        ]
+        for pattern in account_patterns:
+            account_match = re.search(pattern, text)
+            if account_match:
+                patient_info['account_no'] = account_match.group(1) if account_match.groups() else account_match.group()
+                break
+    
+    # Extract height and weight with better patterns
+    if patient_info['height'] == 'Not specified':
+        height_patterns = [
+            r'Height:\s*(\d+\s*(?:cm|inches?|ft|feet)?)',  # Height: 54 or Height: 54 cm
+            r'(\d+)\s*(?:cm|inches?|ft|feet)',  # 54 cm, 54 inches, etc.
+            r'Height\s*(\d+)'  # Height 54
+        ]
+        for pattern in height_patterns:
+            height_match = re.search(pattern, text, re.IGNORECASE)
+            if height_match:
+                patient_info['height'] = height_match.group(1).strip()
+                break
+    
+    if patient_info['weight'] == 'Not specified':
+        weight_patterns = [
+            r'Weight:\s*(\d+\s*(?:kg|lbs?|pounds?)?)',  # Weight: 130 or Weight: 130 lbs
+            r'(\d+)\s*(?:kg|lbs?|pounds?)',  # 130 lbs, 130 kg, etc.
+            r'Weight\s*(\d+)'  # Weight 130
+        ]
+        for pattern in weight_patterns:
+            weight_match = re.search(pattern, text, re.IGNORECASE)
+            if weight_match:
+                patient_info['weight'] = weight_match.group(1).strip()
+                break
     
     # Clean up extracted values - remove any remaining colons or extra text
     for key, value in patient_info.items():
