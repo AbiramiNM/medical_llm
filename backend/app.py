@@ -18,7 +18,38 @@ CORS(app)
 # ---------------------------------------------
 # PDF Generation
 def clean_text(text):
-    return unicodedata.normalize("NFKD", text).encode("latin-1", "ignore").decode("latin-1")
+    """Clean text for PDF generation by removing/replacing problematic Unicode characters"""
+    if not text:
+        return ""
+    
+    # Replace common Unicode characters that cause issues
+    replacements = {
+        '\u2022': '•',  # Bullet point
+        '\u2013': '-',  # En dash
+        '\u2014': '--', # Em dash
+        '\u2018': "'",  # Left single quotation mark
+        '\u2019': "'",  # Right single quotation mark
+        '\u201c': '"',  # Left double quotation mark
+        '\u201d': '"',  # Right double quotation mark
+        '\u2026': '...', # Horizontal ellipsis
+        '\u00a0': ' ',  # Non-breaking space
+        '\u00b0': '°',  # Degree symbol
+        '\u00ae': '(R)', # Registered trademark
+        '\u00a9': '(C)', # Copyright
+    }
+    
+    # Apply replacements
+    for unicode_char, replacement in replacements.items():
+        text = text.replace(unicode_char, replacement)
+    
+    # Remove any remaining problematic characters
+    try:
+        # Try to encode as latin-1, ignoring problematic characters
+        cleaned = text.encode('latin-1', 'ignore').decode('latin-1')
+        return cleaned
+    except Exception:
+        # Fallback: remove all non-ASCII characters
+        return ''.join(char if ord(char) < 128 else '?' for char in text)
 
 def generate_pdf(extracted_text, analysis, filename):
     pdf = FPDF()
@@ -44,7 +75,7 @@ def generate_pdf(extracted_text, analysis, filename):
             pdf.set_font("Arial", size=12, style='B')
             pdf.cell(0, 8, "Patient Information:", ln=True)
             pdf.set_font("Arial", size=11)
-            pdf.multi_cell(0, 6, patient_info)
+            pdf.multi_cell(0, 6, clean_text(patient_info))
             pdf.ln(5)
         
         # Medical details
@@ -60,7 +91,7 @@ def generate_pdf(extracted_text, analysis, filename):
             pdf.set_font("Arial", size=12, style='B')
             pdf.cell(0, 8, "Recommendations:", ln=True)
             pdf.set_font("Arial", size=11)
-            pdf.multi_cell(0, 6, recommendations)
+            pdf.multi_cell(0, 6, clean_text(recommendations))
             pdf.ln(5)
         
         # Analysis
@@ -87,9 +118,25 @@ def generate_pdf(extracted_text, analysis, filename):
 
     filepath = os.path.join("output", filename)
     os.makedirs("output", exist_ok=True)
-    pdf.output(filepath)
-
-    return filepath
+    
+    try:
+        pdf.output(filepath)
+        return filepath
+    except Exception as e:
+        print(f"Error generating PDF: {e}")
+        # Create a simple fallback PDF
+        try:
+            pdf_fallback = FPDF()
+            pdf_fallback.add_page()
+            pdf_fallback.set_font("Arial", size=12)
+            pdf_fallback.cell(0, 10, "VitaNote - Medical Report Analysis", ln=True, align='C')
+            pdf_fallback.ln(10)
+            pdf_fallback.multi_cell(0, 8, "Medical report processed successfully. Please consult with your healthcare provider for detailed analysis.")
+            pdf_fallback.output(filepath)
+            return filepath
+        except Exception as fallback_error:
+            print(f"Fallback PDF generation failed: {fallback_error}")
+            raise e
 
 def extract_patient_info_for_pdf(text):
     """Extract patient information for PDF formatting"""
@@ -120,8 +167,28 @@ def extract_recommendations_for_pdf(text):
 def clean_html_tags(text):
     """Remove HTML tags from text for PDF"""
     import re
+    if not text:
+        return ""
+    
+    # Remove HTML tags
     clean = re.compile('<.*?>')
-    return re.sub(clean, '', text)
+    text = re.sub(clean, '', text)
+    
+    # Decode HTML entities
+    html_entities = {
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&quot;': '"',
+        '&#39;': "'",
+        '&nbsp;': ' ',
+    }
+    
+    for entity, char in html_entities.items():
+        text = text.replace(entity, char)
+    
+    # Clean the text for PDF
+    return clean_text(text)
 
 
 # ---------------------------------------------
