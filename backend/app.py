@@ -52,12 +52,20 @@ def clean_text(text):
         return ''.join(char if ord(char) < 128 else '?' for char in text)
 
 def generate_pdf(extracted_text, analysis, filename):
+    from datetime import datetime
+    
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
-    # Header
-    pdf.cell(0, 10, "VitaNote - Medical Report Analysis", ln=True, align='C')
+    # Header with better styling
+    pdf.set_font("Arial", size=16, style='B')
+    pdf.cell(0, 12, "VitaNote - Medical Report Analysis", ln=True, align='C')
+    pdf.ln(8)
+    
+    # Add a line separator
+    pdf.set_draw_color(74, 111, 203)  # Primary color
+    pdf.line(20, pdf.get_y(), 190, pdf.get_y())
     pdf.ln(10)
 
     # Check if this is real OCR text or metadata
@@ -67,63 +75,98 @@ def generate_pdf(extracted_text, analysis, filename):
         pdf.cell(0, 10, "Medical Report Summary", ln=True, align='C')
         pdf.ln(10)
         
-        pdf.set_font("Arial", size=12)
-        
-        # Extract and format patient information
+        # Extract and format patient information with better alignment
         patient_info = extract_patient_info_for_pdf(extracted_text)
         if patient_info:
             pdf.set_font("Arial", size=12, style='B')
-            pdf.cell(0, 8, "PATIENT INFORMATION", ln=True)
-            pdf.set_font("Arial", size=11)
-            pdf.multi_cell(0, 6, clean_text(patient_info))
-            pdf.ln(5)
+            pdf.set_fill_color(74, 111, 203)  # Primary color
+            pdf.set_text_color(255, 255, 255)  # White text
+            pdf.cell(0, 8, "PATIENT INFORMATION", ln=True, fill=True, align='C')
+            pdf.set_text_color(0, 0, 0)  # Black text
+            pdf.ln(2)
+            pdf.set_font("Arial", size=10)
+            pdf.multi_cell(0, 5, clean_text(patient_info), align='L')
+            pdf.ln(8)
         
         # Extract surgical information
         surgical_info = extract_surgical_info_for_pdf(extracted_text)
         if surgical_info:
             pdf.set_font("Arial", size=12, style='B')
-            pdf.cell(0, 8, "SURGICAL INFORMATION", ln=True)
-            pdf.set_font("Arial", size=11)
-            pdf.multi_cell(0, 6, clean_text(surgical_info))
-            pdf.ln(5)
+            pdf.set_fill_color(52, 195, 185)  # Secondary color
+            pdf.set_text_color(255, 255, 255)  # White text
+            pdf.cell(0, 8, "SURGICAL INFORMATION", ln=True, fill=True, align='C')
+            pdf.set_text_color(0, 0, 0)  # Black text
+            pdf.ln(2)
+            pdf.set_font("Arial", size=10)
+            pdf.multi_cell(0, 5, clean_text(surgical_info), align='L')
+            pdf.ln(8)
         
-        # Medical details
+        # Medical details with better formatting
         pdf.set_font("Arial", size=12, style='B')
-        pdf.cell(0, 8, "MEDICAL DETAILS", ln=True)
-        pdf.set_font("Arial", size=11)
-        pdf.multi_cell(0, 6, clean_text(extracted_text))
-        pdf.ln(5)
+        pdf.set_fill_color(108, 117, 125)  # Gray color
+        pdf.set_text_color(255, 255, 255)  # White text
+        pdf.cell(0, 8, "MEDICAL DETAILS", ln=True, fill=True, align='C')
+        pdf.set_text_color(0, 0, 0)  # Black text
+        pdf.ln(2)
+        pdf.set_font("Arial", size=10)
+        pdf.multi_cell(0, 5, clean_text(extracted_text), align='J')  # Justified text
+        pdf.ln(8)
         
         # Recommendations
         recommendations = extract_recommendations_for_pdf(extracted_text)
         if recommendations:
             pdf.set_font("Arial", size=12, style='B')
-            pdf.cell(0, 8, "Recommendations:", ln=True)
-            pdf.set_font("Arial", size=11)
-            pdf.multi_cell(0, 6, clean_text(recommendations))
-            pdf.ln(5)
+            pdf.set_fill_color(40, 167, 69)  # Success color
+            pdf.set_text_color(255, 255, 255)  # White text
+            pdf.cell(0, 8, "RECOMMENDATIONS", ln=True, fill=True, align='C')
+            pdf.set_text_color(0, 0, 0)  # Black text
+            pdf.ln(2)
+            pdf.set_font("Arial", size=10)
+            pdf.multi_cell(0, 5, clean_text(recommendations), align='L')
+            pdf.ln(8)
         
-        # Analysis
+        # AI Analysis with better formatting
         pdf.set_font("Arial", size=12, style='B')
-        pdf.cell(0, 8, "AI Analysis:", ln=True)
-        pdf.set_font("Arial", size=11)
+        pdf.set_fill_color(220, 53, 69)  # Danger color
+        pdf.set_text_color(255, 255, 255)  # White text
+        pdf.cell(0, 8, "AI ANALYSIS", ln=True, fill=True, align='C')
+        pdf.set_text_color(0, 0, 0)  # Black text
+        pdf.ln(2)
+        pdf.set_font("Arial", size=10)
         # Remove HTML tags from analysis for PDF
         clean_analysis = clean_html_tags(analysis)
-        pdf.multi_cell(0, 6, clean_text(clean_analysis))
+        pdf.multi_cell(0, 5, clean_text(clean_analysis), align='J')  # Justified text
         
     else:
         # This is metadata fallback
         pdf.set_font("Arial", size=12, style='B')
-        pdf.cell(0, 8, "Document Processing Report", ln=True)
-        pdf.set_font("Arial", size=11)
-        pdf.multi_cell(0, 6, clean_text(extracted_text))
+        pdf.set_fill_color(108, 117, 125)  # Gray color
+        pdf.set_text_color(255, 255, 255)  # White text
+        pdf.cell(0, 8, "DOCUMENT PROCESSING REPORT", ln=True, fill=True, align='C')
+        pdf.set_text_color(0, 0, 0)  # Black text
+        pdf.ln(2)
+        pdf.set_font("Arial", size=10)
+        pdf.multi_cell(0, 5, clean_text(extracted_text), align='L')
         pdf.ln(5)
-        pdf.multi_cell(0, 6, clean_text(analysis))
+        pdf.multi_cell(0, 5, clean_text(analysis), align='L')
 
-    # Disclaimer
-    pdf.ln(10)
-    pdf.set_font("Arial", size=10, style='I')
-    pdf.multi_cell(0, 5, "DISCLAIMER: This analysis is generated from the uploaded medical report. Always consult with your healthcare provider for medical advice and interpretation.")
+    # Add footer with current date and time
+    pdf.ln(15)
+    pdf.set_draw_color(74, 111, 203)  # Primary color
+    pdf.line(20, pdf.get_y(), 190, pdf.get_y())
+    pdf.ln(5)
+    
+    # Footer content
+    current_datetime = datetime.now().strftime("%B %d, %Y at %I:%M %p")
+    pdf.set_font("Arial", size=9, style='I')
+    pdf.cell(0, 5, f"Report generated on {current_datetime}", ln=True, align='C')
+    pdf.ln(3)
+    
+    # Disclaimer with better formatting
+    pdf.set_font("Arial", size=9, style='I')
+    pdf.set_text_color(108, 117, 125)  # Gray text
+    pdf.multi_cell(0, 4, "DISCLAIMER: This analysis is generated from the uploaded medical report. Always consult with your healthcare provider for medical advice and interpretation.", align='C')
+    pdf.set_text_color(0, 0, 0)  # Reset to black
 
     filepath = os.path.join("output", filename)
     os.makedirs("output", exist_ok=True)
@@ -141,6 +184,13 @@ def generate_pdf(extracted_text, analysis, filename):
             pdf_fallback.cell(0, 10, "VitaNote - Medical Report Analysis", ln=True, align='C')
             pdf_fallback.ln(10)
             pdf_fallback.multi_cell(0, 8, "Medical report processed successfully. Please consult with your healthcare provider for detailed analysis.")
+            
+            # Add footer to fallback PDF too
+            pdf_fallback.ln(10)
+            current_datetime = datetime.now().strftime("%B %d, %Y at %I:%M %p")
+            pdf_fallback.set_font("Arial", size=9, style='I')
+            pdf_fallback.cell(0, 5, f"Report generated on {current_datetime}", ln=True, align='C')
+            
             pdf_fallback.output(filepath)
             return filepath
         except Exception as fallback_error:
@@ -148,7 +198,9 @@ def generate_pdf(extracted_text, analysis, filename):
             raise e
 
 def extract_patient_info_for_pdf(text):
-    """Extract patient information for PDF formatting"""
+    """Extract patient information for PDF formatting with improved parsing"""
+    import re
+    
     lines = text.split('\n')
     patient_info = {
         'name': 'Not specified',
@@ -161,6 +213,7 @@ def extract_patient_info_for_pdf(text):
         'weight': 'Not specified'
     }
     
+    # More robust extraction patterns
     for line in lines:
         line = line.strip()
         if not line:
@@ -168,48 +221,101 @@ def extract_patient_info_for_pdf(text):
             
         line_lower = line.lower()
         
-        # Extract patient name
-        if 'patient name:' in line_lower:
+        # Extract patient name - multiple patterns
+        if 'patient name:' in line_lower or 'patient:' in line_lower:
             parts = line.split(':', 1)
             if len(parts) > 1:
                 patient_info['name'] = parts[1].strip()
-        elif any(word in line_lower for word in ['abigail', 'houston']) and len(line.split()) >= 2:
-            patient_info['name'] = line.strip()
+        elif 'name:' in line_lower and 'patient' in line_lower:
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                patient_info['name'] = parts[1].strip()
         
-        # Extract MR number
-        if 'mr number:' in line_lower:
+        # Extract MR number - multiple patterns
+        if 'mr number:' in line_lower or 'mr no:' in line_lower or 'mr:' in line_lower:
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                patient_info['mr_number'] = parts[1].strip()
+        elif 'medical record' in line_lower and ':' in line:
             parts = line.split(':', 1)
             if len(parts) > 1:
                 patient_info['mr_number'] = parts[1].strip()
         
-        # Extract date of operation
-        if 'date of operation:' in line_lower:
+        # Extract date of operation - multiple patterns
+        if any(phrase in line_lower for phrase in ['date of operation:', 'operation date:', 'surgery date:', 'date of surgery:']):
             parts = line.split(':', 1)
             if len(parts) > 1:
                 patient_info['date_of_operation'] = parts[1].strip()
         
-        # Extract other fields
-        if 'account no:' in line_lower:
+        # Extract account number
+        if 'account no:' in line_lower or 'account number:' in line_lower or 'account:' in line_lower:
             parts = line.split(':', 1)
             if len(parts) > 1:
                 patient_info['account_no'] = parts[1].strip()
-        elif 'height:' in line_lower:
+        
+        # Extract height
+        if 'height:' in line_lower:
             parts = line.split(':', 1)
             if len(parts) > 1:
                 patient_info['height'] = parts[1].strip()
-        elif 'weight:' in line_lower:
+        
+        # Extract weight
+        if 'weight:' in line_lower:
             parts = line.split(':', 1)
             if len(parts) > 1:
                 patient_info['weight'] = parts[1].strip()
-        elif 'female' in line_lower:
+        
+        # Extract gender
+        if 'female' in line_lower and patient_info['gender'] == 'Not specified':
             patient_info['gender'] = 'Female'
-        elif 'male' in line_lower:
+        elif 'male' in line_lower and patient_info['gender'] == 'Not specified':
             patient_info['gender'] = 'Male'
-        elif 'year-old' in line_lower:
-            import re
-            age_match = re.search(r'(\d+)-year-old', line_lower)
+        
+        # Extract age - multiple patterns
+        if 'year-old' in line_lower or 'years old' in line_lower:
+            age_match = re.search(r'(\d+)[\s-]*(?:year-old|years old)', line_lower)
             if age_match:
                 patient_info['age'] = f"{age_match.group(1)} years old"
+        elif 'age:' in line_lower:
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                patient_info['age'] = parts[1].strip()
+    
+    # Fallback: Look for patterns in the entire text if specific fields weren't found
+    if patient_info['name'] == 'Not specified':
+        # Look for name patterns (First Last)
+        name_match = re.search(r'\b[A-Z][a-z]+\s+[A-Z][a-z]+\b', text)
+        if name_match:
+            potential_name = name_match.group()
+            # Check if it's not a medical term
+            if not any(term in potential_name.lower() for term in ['surgery', 'operative', 'report', 'medical', 'hospital', 'doctor', 'nurse']):
+                patient_info['name'] = potential_name
+    
+    if patient_info['mr_number'] == 'Not specified':
+        # Look for MR number pattern (6 digits)
+        mr_match = re.search(r'\b\d{6}\b', text)
+        if mr_match:
+            patient_info['mr_number'] = mr_match.group()
+    
+    if patient_info['date_of_operation'] == 'Not specified':
+        # Look for date patterns
+        date_match = re.search(r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{1,2}/\d{4}', text)
+        if date_match:
+            patient_info['date_of_operation'] = date_match.group()
+    
+    if patient_info['account_no'] == 'Not specified':
+        # Look for account number pattern (7 digits)
+        account_match = re.search(r'\b\d{7}\b', text)
+        if account_match:
+            patient_info['account_no'] = account_match.group()
+    
+    # Clean up extracted values - remove any remaining colons or extra text
+    for key, value in patient_info.items():
+        if value != 'Not specified' and ':' in value:
+            # Take only the part after the last colon
+            parts = value.split(':')
+            if len(parts) > 1:
+                patient_info[key] = parts[-1].strip()
     
     # Format for PDF
     formatted_info = []
