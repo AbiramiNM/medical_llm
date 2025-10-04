@@ -810,67 +810,22 @@
             hideError();
             
             try {
-                // Simulate API call delay
-                await new Promise(resolve => setTimeout(resolve, 2500));
+                // Make actual API call to backend
+                const response = await fetch('/uploads', {
+                    method: 'POST',
+                    body: formData
+                });
                 
-                // Sample medical report text
-                const medicalReport = `PATIENT: John Doe
-AGE: 45
-DATE: October 15, 2023
-
-CHIEF COMPLAINT: Patient presents with persistent cough and shortness of breath for 3 weeks.
-
-FINDINGS:
-- Chest X-ray shows bilateral interstitial opacities
-- Spirometry: FEV1 65% predicted, FVC 70% predicted
-- Oxygen saturation: 94% on room air
-- CRP elevated at 12 mg/L (normal <5)
-- ESR elevated at 28 mm/hr
-
-IMPRESSION:
-1. Findings suggestive of interstitial lung disease
-2. Mild obstructive pattern on spirometry
-3. Evidence of systemic inflammation
-
-RECOMMENDATIONS:
-1. High-resolution CT scan of chest
-2. Pulmonary function tests with DLCO
-3. Rheumatology consultation to evaluate for connective tissue disease
-4. Follow-up in 2 weeks`;
-
-                // Simulate AI analysis
-                const aiAnalysis = `
-                    <p>Based on your medical report:</p>
-                    
-                    <h3>Key Findings</h3>
-                    <ul>
-                        <li><strong>Lung Abnormalities:</strong> Your chest X-ray shows cloudy areas in both lungs (bilateral interstitial opacities)</li>
-                        <li><strong>Breathing Test Results:</strong> Mild obstruction in lung function (FEV1 65%, FVC 70%)</li>
-                        <li><strong>Oxygen Level:</strong> Slightly low but acceptable (94% on room air)</li>
-                        <li><strong>Inflammation Markers:</strong> Elevated CRP (12 mg/L) and ESR (28 mm/hr) indicating inflammation</li>
-                    </ul>
-                    
-                    <h3>Medical Interpretation</h3>
-                    <p>These findings suggest possible interstitial lung disease, which could be related to autoimmune conditions or environmental exposures. The mild obstruction in your breathing tests is consistent with this type of lung condition.</p>
-                    
-                    <h3>Recommended Next Steps</h3>
-                    <ol>
-                        <li>Get a detailed CT scan of your chest to better visualize the lung abnormalities</li>
-                        <li>Complete pulmonary function tests with diffusion capacity (DLCO) to assess oxygen transfer</li>
-                        <li>Consult with a rheumatologist to evaluate for possible autoimmune conditions</li>
-                        <li>Follow up with your primary doctor in 2 weeks to review results and plan treatment</li>
-                    </ol>
-                    
-                    <div class="important-note">
-                        <i class="fas fa-exclamation-circle"></i> 
-                        <strong>Important:</strong> This analysis is for informational purposes only. 
-                        Always consult with your healthcare provider for medical advice.
-                    </div>
-                `;
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Upload failed');
+                }
                 
-                // Update UI with results
-                extractedText.textContent = medicalReport;
-                analysis.innerHTML = aiAnalysis;
+                const result = await response.json();
+                
+                // Update UI with real results
+                extractedText.textContent = result.extracted_text;
+                analysis.innerHTML = result.analysis;
                 
                 // Show sections
                 extractedSection.style.display = 'block';
@@ -881,8 +836,8 @@ RECOMMENDATIONS:
                 extractedArrow.classList.remove('fa-chevron-down');
                 extractedArrow.classList.add('fa-chevron-up');
                 
-                // Show download link
-                downloadLink.href = "#";
+                // Show download link with real URL
+                downloadLink.href = result.download_url;
                 downloadLink.style.display = 'flex';
                 
                 // Update status to success
@@ -936,7 +891,7 @@ RECOMMENDATIONS:
             chatBox.innerHTML += `
                 <div class="message" id="ai-loading">
                     <div class="message-ai">
-                        <i class="fas fa-robot"></i> MediSum AI
+                        <i class="fas fa-robot"></i> VitaNote AI
                     </div>
                     <div class="message-content">
                         <i class="fas fa-spinner fa-spin"></i> Thinking...
@@ -950,60 +905,24 @@ RECOMMENDATIONS:
             chatBox.scrollTop = chatBox.scrollHeight;
             
             try {
-                // Simulate API call delay
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                // Make actual API call to backend
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        context: context
+                    })
+                });
                 
-                // Generate AI response based on question
-                let aiResponse = "";
-                
-                if (message.toLowerCase().includes("interstitial") || message.toLowerCase().includes("opacities")) {
-                    aiResponse = `Interstitial opacities on a chest X-ray refer to abnormal white patches in the lung tissue. These can indicate inflammation, scarring, or fluid in the supporting tissues of the lungs (the interstitium). 
-
-Common causes include:
-- Inflammatory conditions like sarcoidosis or rheumatoid arthritis
-- Infections such as pneumonia
-- Environmental exposures like asbestos or silica dust
-- Idiopathic pulmonary fibrosis
-
-The bilateral nature (affecting both lungs) seen in your report suggests a systemic process rather than a localized problem. The recommended CT scan will provide more detailed information about the pattern and distribution, which helps in diagnosis.`;
-                } else if (message.toLowerCase().includes("crp") || message.toLowerCase().includes("esr")) {
-                    aiResponse = `CRP (C-Reactive Protein) and ESR (Erythrocyte Sedimentation Rate) are both markers of inflammation in the body.
-
-Your results:
-- CRP: 12 mg/L (normal is less than 5 mg/L)
-- ESR: 28 mm/hr (normal for men is usually under 15-20 mm/hr)
-
-What this means:
-1. Your levels are moderately elevated, indicating ongoing inflammation
-2. This could be related to your lung findings
-3. Possible causes include autoimmune conditions, infections, or other inflammatory processes
-
-The rheumatology consultation is recommended to explore possible autoimmune connections. Your doctor may order additional tests like ANA or rheumatoid factor to investigate further.`;
-                } else if (message.toLowerCase().includes("spirometry") || message.toLowerCase().includes("fev1")) {
-                    aiResponse = `Spirometry measures how well your lungs work. Key measurements:
-
-- FEV1: Forced Expiratory Volume in 1 second (how much air you can forcefully exhale in one second)
-- FVC: Forced Vital Capacity (total amount of air you can exhale after a deep breath)
-
-Your results:
-- FEV1: 65% of predicted (mild reduction)
-- FVC: 70% of predicted (mild reduction)
-
-This pattern (FEV1/FVC ratio preserved) suggests:
-- Mild restrictive lung disease (difficulty expanding lungs fully)
-- Consistent with interstitial changes seen on your X-ray
-
-The DLCO test (diffusing capacity) recommended in your report will measure how well oxygen transfers from your lungs to your blood, which is important in interstitial lung diseases.`;
-                } else {
-                    aiResponse = `I understand you're asking about your medical report. Based on the analysis:
-
-- Your tests show lung abnormalities and signs of inflammation
-- The recommended next steps are important for determining the underlying cause
-- Conditions like interstitial lung disease are manageable with proper diagnosis
-- I recommend following up with your doctor to discuss these findings
-
-If you have specific questions about any terms or recommendations in your report, feel free to ask!`;
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Chat request failed');
                 }
+                
+                const result = await response.json();
                 
                 // Remove loading indicator
                 document.getElementById('ai-loading').remove();
@@ -1012,9 +931,9 @@ If you have specific questions about any terms or recommendations in your report
                 chatBox.innerHTML += `
                     <div class="message">
                         <div class="message-ai">
-                            <i class="fas fa-robot"></i> MediSum AI
+                            <i class="fas fa-robot"></i> VitaNote AI
                         </div>
-                        <div class="message-content">${aiResponse}</div>
+                        <div class="message-content">${result.response}</div>
                     </div>
                 `;
             } catch (err) {
@@ -1022,7 +941,7 @@ If you have specific questions about any terms or recommendations in your report
                 chatBox.innerHTML += `
                     <div class="message">
                         <div class="message-ai">
-                            <i class="fas fa-robot"></i> MediSum AI
+                            <i class="fas fa-robot"></i> VitaNote AI
                         </div>
                         <div class="message-content" style="color: var(--danger);">
                             <i class="fas fa-exclamation-triangle"></i> Network error: ${err.message}
