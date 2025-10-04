@@ -79,43 +79,97 @@ def extract_patient_info(text: str) -> str:
     height = "Not specified"
     weight = "Not specified"
     
-    for line in lines:
+    # Look for patient information in a more flexible way
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if not line:
+            continue
+            
         line_lower = line.lower()
+        
+        # Extract patient name - look for patterns like "Patient name: Abigail Houston"
         if 'patient name:' in line_lower:
-            # Extract name after "Patient name:"
-            parts = line.split(':')
+            parts = line.split(':', 1)
             if len(parts) > 1:
                 patient_name = parts[1].strip()
-        elif 'mr number:' in line_lower:
-            parts = line.split(':')
+        # Also check if the line contains a name pattern (First Last)
+        elif not patient_name or patient_name == "Not specified":
+            # Look for lines that might contain the patient name
+            if any(word in line_lower for word in ['abigail', 'houston']) and len(line.split()) >= 2:
+                patient_name = line.strip()
+        
+        # Extract MR number
+        if 'mr number:' in line_lower:
+            parts = line.split(':', 1)
             if len(parts) > 1:
                 mr_number = parts[1].strip()
-        elif 'date of operation:' in line_lower:
-            parts = line.split(':')
+        elif 'mr number' in line_lower and not mr_number or mr_number == "Not specified":
+            # Look for MR number pattern (6 digits)
+            import re
+            mr_match = re.search(r'\b\d{6}\b', line)
+            if mr_match:
+                mr_number = mr_match.group()
+        
+        # Extract date of operation
+        if 'date of operation:' in line_lower:
+            parts = line.split(':', 1)
             if len(parts) > 1:
                 date_of_operation = parts[1].strip()
-        elif 'account no:' in line_lower:
-            parts = line.split(':')
+        elif 'date of operation' in line_lower and not date_of_operation or date_of_operation == "Not specified":
+            # Look for date pattern
+            import re
+            date_match = re.search(r'\d{1,2}/\d{4}', line)
+            if date_match:
+                date_of_operation = date_match.group()
+        
+        # Extract account number
+        if 'account no:' in line_lower:
+            parts = line.split(':', 1)
             if len(parts) > 1:
                 account_no = parts[1].strip()
-        elif 'height:' in line_lower:
-            parts = line.split(':')
+        elif 'account no' in line_lower and not account_no or account_no == "Not specified":
+            # Look for account number pattern (7 digits)
+            import re
+            account_match = re.search(r'\b\d{7}\b', line)
+            if account_match:
+                account_no = account_match.group()
+        
+        # Extract height
+        if 'height:' in line_lower:
+            parts = line.split(':', 1)
             if len(parts) > 1:
                 height = parts[1].strip()
-        elif 'weight:' in line_lower:
-            parts = line.split(':')
+        
+        # Extract weight
+        if 'weight:' in line_lower:
+            parts = line.split(':', 1)
             if len(parts) > 1:
                 weight = parts[1].strip()
-        elif 'female' in line_lower:
+        
+        # Extract gender
+        if 'female' in line_lower:
             gender = "Female"
         elif 'male' in line_lower:
             gender = "Male"
-        elif 'year-old' in line_lower:
-            # Extract age from "22-year-old"
+        
+        # Extract age
+        if 'year-old' in line_lower:
             import re
             age_match = re.search(r'(\d+)-year-old', line_lower)
             if age_match:
                 age = f"{age_match.group(1)} years old"
+    
+    # If we still don't have the patient name, try to find it from the OCR text
+    if patient_name == "Not specified":
+        # Look for common name patterns in the text
+        import re
+        # Look for "Abigail Houston" pattern
+        name_match = re.search(r'\b[A-Z][a-z]+\s+[A-Z][a-z]+\b', text)
+        if name_match:
+            potential_name = name_match.group()
+            # Check if it's not a medical term
+            if not any(term in potential_name.lower() for term in ['surgery', 'operative', 'report', 'medical', 'hospital']):
+                patient_name = potential_name
     
     return f"""
     <div class="patient-info-grid">

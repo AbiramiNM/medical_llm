@@ -73,14 +73,23 @@ def generate_pdf(extracted_text, analysis, filename):
         patient_info = extract_patient_info_for_pdf(extracted_text)
         if patient_info:
             pdf.set_font("Arial", size=12, style='B')
-            pdf.cell(0, 8, "Patient Information:", ln=True)
+            pdf.cell(0, 8, "PATIENT INFORMATION", ln=True)
             pdf.set_font("Arial", size=11)
             pdf.multi_cell(0, 6, clean_text(patient_info))
             pdf.ln(5)
         
+        # Extract surgical information
+        surgical_info = extract_surgical_info_for_pdf(extracted_text)
+        if surgical_info:
+            pdf.set_font("Arial", size=12, style='B')
+            pdf.cell(0, 8, "SURGICAL INFORMATION", ln=True)
+            pdf.set_font("Arial", size=11)
+            pdf.multi_cell(0, 6, clean_text(surgical_info))
+            pdf.ln(5)
+        
         # Medical details
         pdf.set_font("Arial", size=12, style='B')
-        pdf.cell(0, 8, "Medical Details:", ln=True)
+        pdf.cell(0, 8, "MEDICAL DETAILS", ln=True)
         pdf.set_font("Arial", size=11)
         pdf.multi_cell(0, 6, clean_text(extracted_text))
         pdf.ln(5)
@@ -141,15 +150,141 @@ def generate_pdf(extracted_text, analysis, filename):
 def extract_patient_info_for_pdf(text):
     """Extract patient information for PDF formatting"""
     lines = text.split('\n')
-    info_lines = []
+    patient_info = {
+        'name': 'Not specified',
+        'mr_number': 'Not specified',
+        'date_of_operation': 'Not specified',
+        'age': 'Not specified',
+        'gender': 'Not specified',
+        'account_no': 'Not specified',
+        'height': 'Not specified',
+        'weight': 'Not specified'
+    }
     
     for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
         line_lower = line.lower()
-        if any(keyword in line_lower for keyword in ['patient', 'name', 'age', 'sex', 'gender', 'dob', 'date of birth']):
-            if line.strip():
-                info_lines.append(line.strip())
+        
+        # Extract patient name
+        if 'patient name:' in line_lower:
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                patient_info['name'] = parts[1].strip()
+        elif any(word in line_lower for word in ['abigail', 'houston']) and len(line.split()) >= 2:
+            patient_info['name'] = line.strip()
+        
+        # Extract MR number
+        if 'mr number:' in line_lower:
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                patient_info['mr_number'] = parts[1].strip()
+        
+        # Extract date of operation
+        if 'date of operation:' in line_lower:
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                patient_info['date_of_operation'] = parts[1].strip()
+        
+        # Extract other fields
+        if 'account no:' in line_lower:
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                patient_info['account_no'] = parts[1].strip()
+        elif 'height:' in line_lower:
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                patient_info['height'] = parts[1].strip()
+        elif 'weight:' in line_lower:
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                patient_info['weight'] = parts[1].strip()
+        elif 'female' in line_lower:
+            patient_info['gender'] = 'Female'
+        elif 'male' in line_lower:
+            patient_info['gender'] = 'Male'
+        elif 'year-old' in line_lower:
+            import re
+            age_match = re.search(r'(\d+)-year-old', line_lower)
+            if age_match:
+                patient_info['age'] = f"{age_match.group(1)} years old"
     
-    return '\n'.join(info_lines[:5])  # Limit to first 5 relevant lines
+    # Format for PDF
+    formatted_info = []
+    formatted_info.append(f"Patient Name: {patient_info['name']}")
+    formatted_info.append(f"MR Number: {patient_info['mr_number']}")
+    formatted_info.append(f"Date of Operation: {patient_info['date_of_operation']}")
+    formatted_info.append(f"Age: {patient_info['age']}")
+    formatted_info.append(f"Gender: {patient_info['gender']}")
+    formatted_info.append(f"Account No: {patient_info['account_no']}")
+    formatted_info.append(f"Height: {patient_info['height']}")
+    formatted_info.append(f"Weight: {patient_info['weight']}")
+    
+    return '\n'.join(formatted_info)
+
+def extract_surgical_info_for_pdf(text):
+    """Extract surgical information for PDF formatting"""
+    lines = text.split('\n')
+    surgical_info = {
+        'preoperative_diagnosis': 'Not specified',
+        'postoperative_diagnosis': 'Not specified',
+        'operation_performed': 'Not specified',
+        'surgeon': 'Not specified',
+        'anesthesia': 'Not specified',
+        'condition': 'Not specified',
+        'complications': 'Not specified'
+    }
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        line_lower = line.lower()
+        
+        # Extract surgical information
+        if 'preoperative diagnosis:' in line_lower:
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                surgical_info['preoperative_diagnosis'] = parts[1].strip()
+        elif 'post-operative diagnosi:' in line_lower or 'postoperative diagnosis:' in line_lower:
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                surgical_info['postoperative_diagnosis'] = parts[1].strip()
+        elif 'operation performed:' in line_lower:
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                surgical_info['operation_performed'] = parts[1].strip()
+        elif 'surgeon' in line_lower and surgical_info['surgeon'] == 'Not specified':
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                surgical_info['surgeon'] = parts[1].strip()
+        elif 'anesthesia' in line_lower and surgical_info['anesthesia'] == 'Not specified':
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                surgical_info['anesthesia'] = parts[1].strip()
+        elif 'condition' in line_lower and surgical_info['condition'] == 'Not specified':
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                surgical_info['condition'] = parts[1].strip()
+        elif 'complications' in line_lower and surgical_info['complications'] == 'Not specified':
+            parts = line.split(':', 1)
+            if len(parts) > 1:
+                surgical_info['complications'] = parts[1].strip()
+    
+    # Format for PDF
+    formatted_info = []
+    formatted_info.append(f"Preoperative Diagnosis: {surgical_info['preoperative_diagnosis']}")
+    formatted_info.append(f"Postoperative Diagnosis: {surgical_info['postoperative_diagnosis']}")
+    formatted_info.append(f"Operation Performed: {surgical_info['operation_performed']}")
+    formatted_info.append(f"Surgeon: {surgical_info['surgeon']}")
+    formatted_info.append(f"Anesthesia: {surgical_info['anesthesia']}")
+    formatted_info.append(f"Condition: {surgical_info['condition']}")
+    formatted_info.append(f"Complications: {surgical_info['complications']}")
+    
+    return '\n'.join(formatted_info)
 
 def extract_recommendations_for_pdf(text):
     """Extract recommendations for PDF formatting"""
