@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VitaNote - AI-Powered Medical Report Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4a6fcb;
+            --primary-dark: #3a5ab0;
+            --secondary: #34c3b9;
+            --light: #f8f9ff;
+            --dark: #2c3e50;
+            --success: #28a745;
+            --danger: #dc3545;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --nav-height: 70px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e7f1 100%);
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding-top: var(--nav-height);
+        }
+        
+        /* Navigation Bar */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--nav-height);
+            background: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            padding: 0 5%;
+            z-index: 1000;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .logo i {
+            font-size: 2rem;
+            color: var(--primary);
+        }
+        
+        .logo-text {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+            text-align: center;
+        }
+        
+        .logo-text span {
+            color: var(--secondary);
+        }
+        
+        .nav-links {
+            display: flex;
+            margin-left: auto;
+            gap: 30px;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 500;
+            font-size: 1.1rem;
+            transition: color 0.3s;
+            position: relative;
+            padding: 5px 0;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--primary);
+            transition: width 0.3s;
+            border-radius: 10px;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--gray);
+            max-width: 700px;
+            margin: 0 auto 25px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            min-width: 180px;
+        }
+        
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: var(--gray);
+            font-size: 1rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+        }
+        
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light-gray);
+        }
+        
+        .card-title i {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            color: var(--dark);
+        }
+        
+        .upload-area {
+            border: 3px dashed var(--light-gray);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            background: #fafbff;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: var(--primary);
+            background: rgba(74, 111, 203, 0.03);
+        }
+        
+        .upload-icon {
+            font-size: 3.5rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .upload-hint {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        
+        #file-input {
+            display: none;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+        
+        .text-group {
+            margin-bottom: 25px;
+        }
+        
+        .text-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 18px;
+            border: 2px solid var(--light-gray);
+            border-radius: 12px;
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(74, 111, 203, 0.2);
+        }
+        
+        textarea[readonly] {
+            background: #f8f9ff;
+        }
+        
+        .download-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid var(--light-gray);
+        }
+        
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            text-decoration: none;
+        }
+        
+        .download-btn i {
+            font-size: 1.3rem;
+        }
+        
+        .chat-area {
+            margin-top: 15px;
+        }
+        
+        .chat-input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        #chat_input {
+            flex: 1;
+            min-height: 60px;
+            padding: 15px;
+            margin: 0;
+        }
+        
+        .chat-history {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e6e9f4;
+        }
+        
+        .message:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .message-user {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .message-ai {
+            font-weight: 600;
+            color: var(--secondary);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .message-content {
+            padding-left: 32px;
+        }
+        
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .alert-error {
+            background: #fdecea;
+            border: 1px solid #fad1d0;
+            color: var(--danger);
+        }
+        
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 12px 20px;
+            background: #f0f4ff;
+            border-radius: 12px;
+            font-size: 0.9rem;
+        }
+        
+        .status-icon {
+            font-size: 1.2rem;
+        }
+        
+        .status-success {
+            color: var(--success);
+        }
+        
+        .status-processing {
+            color: var(--primary);
+        }
+        
+        .status-error {
+            color: var(--danger);
+        }
+        
+        .model-info {
+            background: #eef7ff;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .model-name {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 50px;
+            color: var(--gray);
+            border-top: 1px solid var(--light-gray);
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .footer-links a {
+            color: var(--gray);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+        
+        .copyright {
+            font-size: 0.9rem;
+        }
+        
+        /* New Collapsible Section */
+        .extracted-text-section {
+            margin-top: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .extracted-header {
+            background: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .extracted-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .extracted-content {
+            background: #f8f9ff;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            border-top: 1px solid var(--light-gray);
+        }
+        
+        .extracted-content.expanded {
+            display: block;
+        }
+        
+        .extracted-text {
+            background: white;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 250px;
+            overflow-y: auto;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        .ai-analysis-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .ai-content {
+            background: #f8f9ff;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            padding: 20px;
+            line-height: 1.7;
+        }
+        
+        .ai-content p {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav>
+        <div class="logo">
+            <i class="fas fa-file-medical-alt"></i>
+            <div class="logo-text" style="text-align: center; width: 100%;">Vita<span>Note</span></div>
+        </div>
+        <div class="nav-links">
+            <a href="#"><i class="fas fa-home"></i> Home</a>
+            <a href="#">How It Works</a>
+            <a href="#">Security</a>
+            <a href="#">FAQ</a>
+            <a href="#">Contact</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <header>
+            <h1>Understand Your Medical Reports Instantly</h1>
+            <p class="subtitle">Upload medical reports in PDF or image format and get AI-powered summaries and explanations in plain language</p>
+            
+        </header>
+        
+        <div class="alert alert-error" id="error-alert">
+            <i class="fas fa-exclamation-circle"></i> <span id="error-message"></span>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <h2>Upload Medical Report</h2>
+            </div>
+            
+            <div class="upload-area" id="drop-area">
+                <i class="fas fa-file-upload upload-icon"></i>
+                <p class="upload-text">Drag & drop your file here</p>
+                <p class="upload-hint">or click to browse (PDF, JPG, PNG, JPEG)</p>
+                <input type="file" id="file-input" name="file" accept=".pdf,.jpg,.jpeg,.png">
+            </div>
+            
+            <div class="status-bar" id="upload-status" style="display: none;">
+                <i class="fas fa-spinner fa-spin status-icon status-processing"></i>
+                <span>Processing your document...</span>
+            </div>
+            
+            <div class="model-info">
+                <i class="fas fa-microchip"></i> Powered by: 
+                <span class="model-name">Meta-Llama/Llama-4-Scout-17B-16E-Instruct</span> - Advanced medical AI model
+            </div>
+            
+            <button class="btn btn-primary btn-block" id="submit-btn" disabled>
+                <i class="fas fa-stethoscope"></i> Analyze Report
+            </button>
+        </div>
+        
+        <!-- Extracted Text Section (Collapsible) -->
+        <div class="extracted-text-section" id="extracted-section" style="display: none;">
+            <div class="extracted-header" id="extracted-header">
+                <div class="extracted-title">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Extracted Text</span>
+                </div>
+                <i class="fas fa-chevron-down" id="extracted-arrow"></i>
+            </div>
+            <div class="extracted-content" id="extracted-content">
+                <div class="extracted-text" id="extracted_text"></div>
+            </div>
+        </div>
+        
+        <!-- AI Analysis Section -->
+        <div class="ai-analysis-section" id="ai-section" style="display: none;">
+            <div class="ai-header">
+                <i class="fas fa-robot" style="color: var(--secondary); font-size: 1.5rem;"></i>
+                <h2>AI Analysis</h2>
+            </div>
+            <div class="ai-content" id="analysis">
+                <!-- AI analysis will be inserted here -->
+            </div>
+            
+            <div class="download-section">
+                <a id="download-link" href="#" class="btn btn-secondary download-btn" style="display: none;">
+                    <i class="fas fa-download"></i> Download Full Report (PDF)
+                </a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">
+                <i class="fas fa-comments"></i>
+                <h2>Ask a Follow-up Question</h2>
+            </div>
+            
+            <p>Ask about your report analysis for more insights:</p>
+            
+            <div class="chat-input-group">
+                <textarea id="chat_input" placeholder="e.g. What does this result mean?"></textarea>
+                <button class="btn btn-primary" onclick="sendChat()" id="chat-btn">
+                    <i class="fas fa-paper-plane"></i> Send
+                </button>
+            </div>
+            
+            <div class="chat-area">
+                <div class="chat-history" id="chat_history"></div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title">
+                <i class="fas fa-heartbeat"></i>
+                <h2>How MediSum Helps You</h2>
+            </div>
+            <div class="grid" style="gap: 20px; display: grid; grid-template-columns: 1fr 1fr;">
+                <div>
+                    <h3><i class="fas fa-check-circle" style="color: var(--success);"></i> For Patients</h3>
+                    <p>Understand your health status without medical jargon. Prepare better for doctor visits and reduce anxiety about complex terminology.</p>
+                </div>
+                <div>
+                    <h3><i class="fas fa-user-md" style="color: var(--primary);"></i> For Doctors</h3>
+                    <p>Save time on explanations. Provide patients with clear summaries they can review at home. Improve patient understanding and compliance.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="footer-links">
+            <a href="#"><i class="fas fa-shield-alt"></i> Privacy Policy</a>
+            <a href="#"><i class="fas fa-file-contract"></i> Terms of Service</a>
+            <a href="#"><i class="fas fa-building"></i> About Us</a>
+            <a href="#"><i class="fas fa-newspaper"></i> Blog</a>
+        </div>
+    </footer>
+    
+    <script>
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const extractedText = document.getElementById('extracted_text');
+        const analysis = document.getElementById('analysis');
+        const downloadLink = document.getElementById('download-link');
+        const uploadStatus = document.getElementById('upload-status');
+        const errorAlert = document.getElementById('error-alert');
+        const errorMessage = document.getElementById('error-message');
+        const extractedSection = document.getElementById('extracted-section');
+        const extractedHeader = document.getElementById('extracted-header');
+        const extractedContent = document.getElementById('extracted-content');
+        const extractedArrow = document.getElementById('extracted-arrow');
+        const aiSection = document.getElementById('ai-section');
+        
+        // Toggle extracted text section
+        extractedHeader.addEventListener('click', () => {
+            extractedContent.classList.toggle('expanded');
+            extractedArrow.classList.toggle('fa-chevron-down');
+            extractedArrow.classList.toggle('fa-chevron-up');
+        });
+        
+        // File upload handling
+        dropArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('drag-over');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('drag-over');
+        }
+        
+        function handleFileSelect(e) {
+            const files = e.target.files || e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+                
+                if (validTypes.includes(file.type)) {
+                    submitBtn.disabled = false;
+                    // Update UI to show selected file
+                    dropArea.innerHTML = `
+                        <i class="fas fa-file-medical upload-icon"></i>
+                        <p class="upload-text">${file.name}</p>
+                        <p class="upload-hint">Click to change file</p>
+                    `;
+                } else {
+                    showError('Invalid file type. Please upload a PDF or image (JPG, PNG).');
+                    submitBtn.disabled = true;
+                }
+            }
+        }
+        
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            handleFileSelect(e);
+        }
+        
+        // Form submission
+        submitBtn.addEventListener('click', async () => {
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            // Reset previous results
+            extractedText.textContent = '';
+            analysis.innerHTML = '';
+            downloadLink.style.display = 'none';
+            document.getElementById("chat_history").innerHTML = '';
+            
+            // Show processing status
+            uploadStatus.style.display = 'flex';
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            hideError();
+            
+            try {
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 2500));
+                
+                // Sample medical report text
+                const medicalReport = `PATIENT: John Doe
+AGE: 45
+DATE: October 15, 2023
+
+CHIEF COMPLAINT: Patient presents with persistent cough and shortness of breath for 3 weeks.
+
+FINDINGS:
+- Chest X-ray shows bilateral interstitial opacities
+- Spirometry: FEV1 65% predicted, FVC 70% predicted
+- Oxygen saturation: 94% on room air
+- CRP elevated at 12 mg/L (normal <5)
+- ESR elevated at 28 mm/hr
+
+IMPRESSION:
+1. Findings suggestive of interstitial lung disease
+2. Mild obstructive pattern on spirometry
+3. Evidence of systemic inflammation
+
+RECOMMENDATIONS:
+1. High-resolution CT scan of chest
+2. Pulmonary function tests with DLCO
+3. Rheumatology consultation to evaluate for connective tissue disease
+4. Follow-up in 2 weeks`;
+
+                // Simulate AI analysis
+                const aiAnalysis = `
+                    <p>Based on your medical report:</p>
+                    
+                    <h3>Key Findings</h3>
+                    <ul>
+                        <li><strong>Lung Abnormalities:</strong> Your chest X-ray shows cloudy areas in both lungs (bilateral interstitial opacities)</li>
+                        <li><strong>Breathing Test Results:</strong> Mild obstruction in lung function (FEV1 65%, FVC 70%)</li>
+                        <li><strong>Oxygen Level:</strong> Slightly low but acceptable (94% on room air)</li>
+                        <li><strong>Inflammation Markers:</strong> Elevated CRP (12 mg/L) and ESR (28 mm/hr) indicating inflammation</li>
+                    </ul>
+                    
+                    <h3>Medical Interpretation</h3>
+                    <p>These findings suggest possible interstitial lung disease, which could be related to autoimmune conditions or environmental exposures. The mild obstruction in your breathing tests is consistent with this type of lung condition.</p>
+                    
+                    <h3>Recommended Next Steps</h3>
+                    <ol>
+                        <li>Get a detailed CT scan of your chest to better visualize the lung abnormalities</li>
+                        <li>Complete pulmonary function tests with diffusion capacity (DLCO) to assess oxygen transfer</li>
+                        <li>Consult with a rheumatologist to evaluate for possible autoimmune conditions</li>
+                        <li>Follow up with your primary doctor in 2 weeks to review results and plan treatment</li>
+                    </ol>
+                    
+                    <div class="important-note">
+                        <i class="fas fa-exclamation-circle"></i> 
+                        <strong>Important:</strong> This analysis is for informational purposes only. 
+                        Always consult with your healthcare provider for medical advice.
+                    </div>
+                `;
+                
+                // Update UI with results
+                extractedText.textContent = medicalReport;
+                analysis.innerHTML = aiAnalysis;
+                
+                // Show sections
+                extractedSection.style.display = 'block';
+                aiSection.style.display = 'block';
+                
+                // Expand extracted text by default
+                extractedContent.classList.add('expanded');
+                extractedArrow.classList.remove('fa-chevron-down');
+                extractedArrow.classList.add('fa-chevron-up');
+                
+                // Show download link
+                downloadLink.href = "#";
+                downloadLink.style.display = 'flex';
+                
+                // Update status to success
+                uploadStatus.innerHTML = `
+                    <i class="fas fa-check-circle status-icon status-success"></i>
+                    <span>Analysis completed successfully!</span>
+                `;
+                
+            } catch (err) {
+                showError('Processing failed: ' + err.message);
+                console.error('Upload error:', err);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-stethoscope"></i> Analyze Report';
+                
+                // Reset status after delay
+                setTimeout(() => {
+                    uploadStatus.style.display = 'none';
+                    uploadStatus.innerHTML = `
+                        <i class="fas fa-spinner fa-spin status-icon status-processing"></i>
+                        <span>Processing your document...</span>
+                    `;
+                }, 3000);
+            }
+        });
+        
+        // Chat function
+        async function sendChat() {
+            const message = document.getElementById('chat_input').value.trim();
+            const context = analysis.innerHTML;
+            const chatBox = document.getElementById('chat_history');
+            const chatBtn = document.getElementById('chat-btn');
+            
+            if (!message) return;
+            if (!context) {
+                showError('Please analyze a report first before asking questions.');
+                return;
+            }
+            
+            // Add user message to chat
+            chatBox.innerHTML += `
+                <div class="message">
+                    <div class="message-user">
+                        <i class="fas fa-user"></i> You
+                    </div>
+                    <div class="message-content">${message}</div>
+                </div>
+            `;
+            
+            // Show loading indicator for AI response
+            chatBox.innerHTML += `
+                <div class="message" id="ai-loading">
+                    <div class="message-ai">
+                        <i class="fas fa-robot"></i> MediSum AI
+                    </div>
+                    <div class="message-content">
+                        <i class="fas fa-spinner fa-spin"></i> Thinking...
+                    </div>
+                </div>
+            `;
+            
+            // Clear input and disable button
+            document.getElementById('chat_input').value = '';
+            chatBtn.disabled = true;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            
+            try {
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Generate AI response based on question
+                let aiResponse = "";
+                
+                if (message.toLowerCase().includes("interstitial") || message.toLowerCase().includes("opacities")) {
+                    aiResponse = `Interstitial opacities on a chest X-ray refer to abnormal white patches in the lung tissue. These can indicate inflammation, scarring, or fluid in the supporting tissues of the lungs (the interstitium). 
+
+Common causes include:
+- Inflammatory conditions like sarcoidosis or rheumatoid arthritis
+- Infections such as pneumonia
+- Environmental exposures like asbestos or silica dust
+- Idiopathic pulmonary fibrosis
+
+The bilateral nature (affecting both lungs) seen in your report suggests a systemic process rather than a localized problem. The recommended CT scan will provide more detailed information about the pattern and distribution, which helps in diagnosis.`;
+                } else if (message.toLowerCase().includes("crp") || message.toLowerCase().includes("esr")) {
+                    aiResponse = `CRP (C-Reactive Protein) and ESR (Erythrocyte Sedimentation Rate) are both markers of inflammation in the body.
+
+Your results:
+- CRP: 12 mg/L (normal is less than 5 mg/L)
+- ESR: 28 mm/hr (normal for men is usually under 15-20 mm/hr)
+
+What this means:
+1. Your levels are moderately elevated, indicating ongoing inflammation
+2. This could be related to your lung findings
+3. Possible causes include autoimmune conditions, infections, or other inflammatory processes
+
+The rheumatology consultation is recommended to explore possible autoimmune connections. Your doctor may order additional tests like ANA or rheumatoid factor to investigate further.`;
+                } else if (message.toLowerCase().includes("spirometry") || message.toLowerCase().includes("fev1")) {
+                    aiResponse = `Spirometry measures how well your lungs work. Key measurements:
+
+- FEV1: Forced Expiratory Volume in 1 second (how much air you can forcefully exhale in one second)
+- FVC: Forced Vital Capacity (total amount of air you can exhale after a deep breath)
+
+Your results:
+- FEV1: 65% of predicted (mild reduction)
+- FVC: 70% of predicted (mild reduction)
+
+This pattern (FEV1/FVC ratio preserved) suggests:
+- Mild restrictive lung disease (difficulty expanding lungs fully)
+- Consistent with interstitial changes seen on your X-ray
+
+The DLCO test (diffusing capacity) recommended in your report will measure how well oxygen transfers from your lungs to your blood, which is important in interstitial lung diseases.`;
+                } else {
+                    aiResponse = `I understand you're asking about your medical report. Based on the analysis:
+
+- Your tests show lung abnormalities and signs of inflammation
+- The recommended next steps are important for determining the underlying cause
+- Conditions like interstitial lung disease are manageable with proper diagnosis
+- I recommend following up with your doctor to discuss these findings
+
+If you have specific questions about any terms or recommendations in your report, feel free to ask!`;
+                }
+                
+                // Remove loading indicator
+                document.getElementById('ai-loading').remove();
+                
+                // Add AI response
+                chatBox.innerHTML += `
+                    <div class="message">
+                        <div class="message-ai">
+                            <i class="fas fa-robot"></i> MediSum AI
+                        </div>
+                        <div class="message-content">${aiResponse}</div>
+                    </div>
+                `;
+            } catch (err) {
+                document.getElementById('ai-loading').remove();
+                chatBox.innerHTML += `
+                    <div class="message">
+                        <div class="message-ai">
+                            <i class="fas fa-robot"></i> MediSum AI
+                        </div>
+                        <div class="message-content" style="color: var(--danger);">
+                            <i class="fas fa-exclamation-triangle"></i> Network error: ${err.message}
+                        </div>
+                    </div>
+                `;
+            } finally {
+                chatBtn.disabled = false;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+        
+        // Error handling functions
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorAlert.style.display = 'flex';
+        }
+        
+        function hideError() {
+            errorAlert.style.display = 'none';
+        }
+        
+        // Enable chat submission with Enter key
+        document.getElementById('chat_input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChat();
+            }
+        });
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set focus to file drop area
+            dropArea.focus();
+        });
+    </script>
+</body>
+</html>

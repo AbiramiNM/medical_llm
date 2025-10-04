@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Medical Report Summarizer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f8f8f8;
+    }
+    h2 {
+      color: #333;
+    }
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h2>Upload Medical Report (Image or PDF)</h2>
+  <form id="upload-form" enctype="multipart/form-data">
+    <input type="file" name="file" required>
+    <button type="submit">Submit</button>
+  </form>
+
+  <h3>Extracted Text:</h3>
+  <textarea id="extracted_text" readonly></textarea>
+
+  <h3>LLM Analysis:</h3>
+  <textarea id="analysis" readonly></textarea>
+
+  <a id="download-link" href="#" style="display:none;" download>
+  <button type="button">📥 Download Full Result (PDF)</button>
+  </a>
+ 
+  <h3>Ask a follow-up question:</h3>
+<textarea id="chat_input" placeholder="e.g. What does this result mean?" style="width:100%;"></textarea>
+<br>
+<button onclick="sendChat()">💬 Ask</button>
+
+<div id="chat_history" style="margin-top: 1rem; border-top: 1px solid #ccc; padding-top: 1rem;"></div>
+
+<script>
+  const form = document.getElementById('upload-form');
+  const extracted = document.getElementById('extracted_text');
+  const analysis = document.getElementById('analysis');
+  const downloadLink = document.getElementById('download-link');
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+
+    const response = await fetch('/uploads', {
+      method: 'POST',
+      body: formData
+    });
+
+    const result = await response.json();
+
+    extracted.value = result.extracted_text || "Error extracting text.";
+    analysis.value = result.analysis || "Error generating analysis.";
+
+    if (result.download_url) {
+      downloadLink.href = result.download_url;
+      downloadLink.style.display = 'inline-block';
+    } else {
+      downloadLink.style.display = 'none';
+    }
+
+    document.getElementById("chat_history").innerHTML = ''; // Reset chat on new upload
+  }
+
+  async function sendChat() {
+    const message = document.getElementById('chat_input').value;
+    const context = document.getElementById('analysis').value;
+    const chatBox = document.getElementById('chat_history');
+
+    const response = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, context })
+    });
+
+    const result = await response.json();
+
+    if (result.response) {
+      chatBox.innerHTML += `<div><b>You:</b> ${message}</div>`;
+      chatBox.innerHTML += `<div><b>AI:</b> ${result.response}</div><hr>`;
+    } else {
+      chatBox.innerHTML += `<div style="color:red;">Error: ${result.error}</div>`;
+    }
+
+    document.getElementById('chat_input').value = '';
+  }
+</script>
+</body>
+</html>

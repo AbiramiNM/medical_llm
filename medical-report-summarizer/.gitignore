@@ -1,0 +1,31 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Environment variables
+.env
+
+# Virtual environment (if inside the project)
+cap_pro/
+venv/
+env/
+ENV/
+*.egg-info/
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+
+# IDE/editor configs (optional)
+.vscode/
+.idea/
+
+# Upload folders and output results
+uploads/
+output/
+
+# Test artifacts
+test.py
